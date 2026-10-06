@@ -201,7 +201,7 @@ function plotTreeMap(dataArray: Array<any>, dataDetails: Array<any>) {
 
     return '<div id="treemap-tooltip">' +
           '<span><b>' + data.getValue(row, 0) + '</b></span><br>' +
-          '<span> $' + size.toFixed(2) + ' (' + (budgetPct !== undefined ? budgetPct.toFixed(2) + '% of budget' : 'no budget for this category') + ')</span><br>' +
+          '<span> $' + size.toFixed(2) + ' (' + (budgetPct !== undefined ? budgetPct.toFixed(0) + '% of budget' : 'no budget for this category') + ')</span><br>' +
           // '<div>' + htmlDetails(dataDetails[row]) + '</div>' +
           '</div>';
   }
