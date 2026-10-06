@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lunch Bites</title>
+    <!-- Load Google Charts Loader -->
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+  </head>
+  <body>
+    <!--Div that will hold the pie chart-->
+    <div id="app">
+      <button id="updateBtn" class="update-btn">Update API Key</button>
+      <dialog id="apiKeyModal">
+        <form method="dialog">
+            <h3>API Key Required</h3>
+            <p style="font-size: 13px; color: #666; margin-top: 0;">Please enter your Lunch Money access token.</p>
+            <input type="password" id="apiKeyInput" placeholder="API Key" required>
+            <button id="saveBtn" value="save">Save</button>
+        </form>
+      </dialog>
+      <h2 id="budget-name"></h2>
+      <details id="period-menu" class="period-menu">
+        <summary id="period-menu-trigger">This month</summary>
+        <div class="period-menu__options" role="menu" aria-label="Spending period">
+          <button type="button" role="menuitem" data-period="This month">This month</button>
+          <button type="button" role="menuitem" data-period="Last month">Last month</button>
+        </div>
+      </details>
+      <div id="chart-div"></div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+
+</html>
