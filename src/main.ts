@@ -1,5 +1,10 @@
 import './style.css'
 
+declare global {
+  interface Window {
+    loadCategoryTransactions: (categoryId: number) => void;
+  }
+}
 // Load the Visualization API and the corechart package.
 google.charts.load('current', {'packages':['corechart','treemap']});
 
@@ -15,10 +20,28 @@ const apiKeyInput = document.getElementById('apiKeyInput') as HTMLInputElement |
 const periodMenu = document.getElementById('period-menu') as HTMLDetailsElement | null;
 const periodMenuTrigger = document.getElementById('period-menu-trigger');
 
+var currentPeriod = '';
 var accessToken = apiKeyInput?.value.trim() || "";
+var userInfo: any = {};
 const categoryMap = new Map<number,any>();
+const categoryExpensesMap = new Map<number,any>();
+
+function getPeriodDates(period: string): { startOfMonth: Date, endOfMonth: Date } {
+  const today = new Date();
+  var startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+  var endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+  if (period === 'Last month') {
+    startOfMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    endOfMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+  }
+  return { startOfMonth, endOfMonth };
+}
 
 function onPeriodChange(period: string) {
+  if (period === currentPeriod) {
+    return;
+  }
+  currentPeriod = period;
   if (periodMenuTrigger) {
     periodMenuTrigger.textContent = period;
   }
@@ -27,15 +50,10 @@ function onPeriodChange(period: string) {
   }
   console.log(`Period changed to: ${period}`);
 
-  const today = new Date();
-  var startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-  var endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-  if (period === 'Last month') {
-    startOfMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-    endOfMonth = new Date(today.getFullYear(), today.getMonth(), 0);
-  }
-  console.log(`Loading transactions from ${startOfMonth.toISOString()} to ${endOfMonth.toISOString()}`);
+  const { startOfMonth, endOfMonth } = getPeriodDates(period);
+  console.log(`Loading data from ${startOfMonth.toISOString()} to ${endOfMonth.toISOString()}`);
   loadBudgetSummary(startOfMonth, endOfMonth);
+  categoryExpensesMap.clear();
 }
 
 periodMenu?.querySelectorAll<HTMLButtonElement>('[data-period]').forEach((item) => {
@@ -97,7 +115,7 @@ function loadAllData() {
 }
 
 async function loadUserData() {
-  const userInfo = await getInfo(accessToken, ME_ENDPOINT);
+  userInfo = await getInfo(accessToken, ME_ENDPOINT);
   document.getElementById('budget-name')!.textContent = userInfo.budget_name;
   console.log('User data:', userInfo);
 
@@ -117,14 +135,7 @@ async function loadBudgetSummary(startDate: Date, endDate: Date) {
 async function loadTransactions(startDate: Date, endDate: Date) {
   // aggregate transactions amounts (in base currency) by category for the defined period
   const transactionsData = await getInfo(accessToken, `${TRANSACTIONS_ENDPOINT}?start_date=${startDate.toISOString().split('T')[0]}&end_date=${endDate.toISOString().split('T')[0]}`)
-  const category_base_amounts = new Map<number, number>();
-  for (const transaction of transactionsData.transactions) {
-    const categoryId = transaction.category_id as number;
-    if (!category_base_amounts.get(categoryId)) {
-      category_base_amounts.set(categoryId, 0);
-    }
-    category_base_amounts.set(categoryId, category_base_amounts.get(categoryId)! + transaction.to_base);
-  }
+  return transactionsData.transactions;
 }
 
 function calculateSpent(catExp: any): number {
@@ -175,6 +186,86 @@ function drawBudgetTreeMap(categoryExpenses: Array<any>) {
   plotTreeMap(dataArray, dataDetails)
 }
 
+function loadCategoryTransactions(categoryId: number) {
+  if (categoryExpensesMap.size === 0) {
+    // lazy load transactions for the current period and populate the categoryExpensesMap
+    const { startOfMonth, endOfMonth } = getPeriodDates(currentPeriod);
+    console.log(`Loading all transactions from ${startOfMonth.toISOString()} to ${endOfMonth.toISOString()}`);
+    loadTransactions(startOfMonth, endOfMonth).then(transactions => {
+      for (const transaction of transactions) {
+        if (!categoryExpensesMap.has(transaction.category_id)) {
+          categoryExpensesMap.set(transaction.category_id, []);
+        }
+        categoryExpensesMap.get(transaction.category_id)!.push(transaction);
+      }
+      showCategoryTransactions(categoryId);
+    }).catch(error => {
+      console.error('Error loading transactions:', error);
+    });
+  } else {
+    showCategoryTransactions(categoryId);
+  }
+}
+window.loadCategoryTransactions = loadCategoryTransactions;
+
+function getSubcategoryTransactions(category: any, transactions: Array<any>) {
+  if (category.children) {
+    for (const subcategory of category.children) {
+      const subcategoryTransactions = categoryExpensesMap.get(subcategory.id) || [];
+      transactions.push(...subcategoryTransactions);
+      getSubcategoryTransactions(subcategory, transactions);
+    }
+  }
+}
+
+function showCategoryTransactions(categoryId: number) {
+  const category = categoryMap.get(categoryId);
+  if (!category) {
+    console.error(`Category with ID ${categoryId} not found.`);
+    return;
+  }
+  const transactions = [...categoryExpensesMap.get(categoryId) || []];
+  getSubcategoryTransactions(category, transactions);
+  transactions.sort((a, b) => a.date.localeCompare(b.date));
+  const modalContent = document.getElementById('transactions-modal-content');
+  if (modalContent) {
+    modalContent.innerHTML = `<h3>${category.name} transactions</h3>`;
+    if (transactions.length === 0) {
+      modalContent.innerHTML += '<p>No transactions found for this category.</p>';
+    } else {
+      const tableWrapper = document.createElement('div');
+      tableWrapper.className = 'transactions-table-wrap';
+      const transactionTable = document.createElement('table');
+      transactionTable.className = 'transactions-table';
+      transactionTable.innerHTML = `
+        <thead>
+          <tr><th scope="col">Date</th><th scope="col">Category</th><th scope="col">Payee</th><th scope="col">Amount (${userInfo?.primary_currency?.toUpperCase()})</th></tr>
+        </thead>
+        <tbody></tbody>
+      `;
+      const tableBody = transactionTable.querySelector('tbody')!;
+      for (const transaction of transactions) {
+        const row = document.createElement('tr');
+        const dateCell = document.createElement('td');
+        dateCell.textContent = transaction.date;
+        const categoryCell = document.createElement('td');
+        categoryCell.textContent = transaction.category_id ? categoryMap.get(transaction.category_id)?.name || 'Unknown' : 'Uncategorized';
+        const payeeCell = document.createElement('td');
+        payeeCell.textContent = transaction.payee;
+        const amountCell = document.createElement('td');
+        amountCell.textContent = `${transaction.to_base.toFixed(2)}`;
+        amountCell.className = 'transactions-table__amount';
+        row.append(dateCell, categoryCell, payeeCell, amountCell);
+        tableBody.appendChild(row);
+      }
+      tableWrapper.appendChild(transactionTable);
+      modalContent.appendChild(tableWrapper);
+    }
+    const transactionsModal = document.getElementById('transactions-modal') as HTMLDialogElement | null;
+    transactionsModal?.showModal();
+  }
+}
+
 function plotTreeMap(dataArray: Array<any>, dataDetails: Array<any>) {
   console.log('Data array for treemap:', dataArray);
   console.log('Data details for treemap:', dataDetails);
@@ -203,11 +294,11 @@ function plotTreeMap(dataArray: Array<any>, dataDetails: Array<any>) {
           '<span><b>' + data.getValue(row, 0) + '</b></span><br>' +
           '<span> $' + size.toFixed(2) + ' (' + (budgetPct !== undefined ? budgetPct.toFixed(0) + '% of budget' : 'no budget for this category') + ')</span><br>' +
           // '<div>' + htmlDetails(dataDetails[row]) + '</div>' +
+          '<span><a href="#" onclick="loadCategoryTransactions(' + dataDetails[row].category_id + ')">Show transactions</a></span>' +
           '</div>';
   }
 
   var data = google.visualization.arrayToDataTable(dataArray)
-  console.log('Data table for treemap:', data);
   var element = document.getElementById('chart-div');
   if (element) {
     var tree = new google.visualization.TreeMap(element);
