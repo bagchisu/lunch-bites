@@ -20,30 +20,27 @@ const apiKeyInput = document.getElementById('apiKeyInput') as HTMLInputElement |
 const periodMenu = document.getElementById('period-menu') as HTMLDetailsElement | null;
 const periodMenuTrigger = document.getElementById('period-menu-trigger');
 
-var currentPeriod = '';
+var currentPeriod = -1;
 var accessToken = apiKeyInput?.value.trim() || "";
 var userInfo: any = {};
 const categoryMap = new Map<number,any>();
 const categoryExpensesMap = new Map<number,any>();
 
-function getPeriodDates(period: string): { startOfMonth: Date, endOfMonth: Date } {
+function getPeriodDates(monthOffset: number): { startOfMonth: Date, endOfMonth: Date } {
   const today = new Date();
-  var startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-  var endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-  if (period === 'Last month') {
-    startOfMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-    endOfMonth = new Date(today.getFullYear(), today.getMonth(), 0);
-  }
+  const month = today.getMonth() - monthOffset
+  var startOfMonth = new Date(today.getFullYear(), month, 1);
+  var endOfMonth = new Date(today.getFullYear(), month + 1, 0);
   return { startOfMonth, endOfMonth };
 }
 
-function onPeriodChange(period: string) {
+function onPeriodChange(period: number) {
   if (period === currentPeriod) {
     return;
   }
   currentPeriod = period;
   if (periodMenuTrigger) {
-    periodMenuTrigger.textContent = period;
+    periodMenuTrigger.textContent = periodMenu?.querySelector<HTMLButtonElement>(`[data-period="${period}"]`)?.textContent || 'Select period';
   }
   if (periodMenu) {
     periodMenu.open = false;
@@ -56,11 +53,25 @@ function onPeriodChange(period: string) {
   categoryExpensesMap.clear();
 }
 
+const periodOptions = periodMenu?.querySelector('.period-menu__options');
+if (periodOptions) {
+  const today = new Date();
+  for (let monthsBeforeCurrent = 1; monthsBeforeCurrent <= 5; monthsBeforeCurrent++) {
+    const periodDate = new Date(today.getFullYear(), today.getMonth() - monthsBeforeCurrent, 1);
+    const item = document.createElement('button');
+    item.type = 'button';
+    item.setAttribute('role', 'menuitem');
+    item.dataset.period = String(monthsBeforeCurrent);
+    item.textContent = periodDate.toLocaleString(undefined, { month: 'long', year: 'numeric' });
+    periodOptions.appendChild(item);
+  }
+}
+
 periodMenu?.querySelectorAll<HTMLButtonElement>('[data-period]').forEach((item) => {
   item.addEventListener('click', () => {
     const period = item.dataset.period;
     if (period) {
-      onPeriodChange(period);
+      onPeriodChange(Number(period));
     }
   });
 });
@@ -108,7 +119,7 @@ function loadAllData() {
     return;
   }
   loadUserData().then(() => {
-    onPeriodChange('This month');
+    onPeriodChange(0);
   }).catch((error) => {
     console.error('Error loading user data:', error);
   });
