@@ -175,6 +175,26 @@ p {
   width:150px;
 }
 
+.treemap-tooltip__button {
+  width: 100%;
+  margin-top: 8px;
+  padding: 7px 10px;
+  border: 1px solid var(--accent-border);
+  border-radius: 4px;
+  background: var(--accent-bg);
+  color: var(--text-h);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.treemap-tooltip__button:hover,
+.treemap-tooltip__button:focus-visible {
+  background: var(--accent-bg);
+  outline: 2px solid var(--accent-border);
+  outline-offset: 2px;
+}
+
 #transactions-modal {
   width: min(560px, calc(100vw - 32px));
   max-width: none;

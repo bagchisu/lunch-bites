@@ -282,17 +282,6 @@ function plotTreeMap(dataArray: Array<any>, dataDetails: Array<any>) {
   console.log('Data details for treemap:', dataDetails);
 
   function showStaticTooltip(row:number, size:number, value:number) {
-    function htmlDetails(details:any) {
-      if (!details || !details.totals) {
-        return '';
-      }
-      var html = '<ul>';
-      for (const [key, value] of Object.entries(details.totals)) {
-        html += `<li>${key}: $${value}</li>`;
-      }
-      html += '</ul>';
-      return html;
-    }
     var budgetPct = undefined;
     if (dataDetails[row] && dataDetails[row].totals) {
       budgetPct = calculateBudgetPct(dataDetails[row]);
@@ -304,8 +293,7 @@ function plotTreeMap(dataArray: Array<any>, dataDetails: Array<any>) {
     return '<div id="treemap-tooltip">' +
           '<span><b>' + data.getValue(row, 0) + '</b></span><br>' +
           '<span> $' + size.toFixed(2) + ' (' + (budgetPct !== undefined ? budgetPct.toFixed(0) + '% of budget' : 'no budget for this category') + ')</span><br>' +
-          // '<div>' + htmlDetails(dataDetails[row]) + '</div>' +
-          '<span><a href="#" onclick="loadCategoryTransactions(' + dataDetails[row].category_id + ')">Show transactions</a></span>' +
+          '<button type="button" class="treemap-tooltip__button" onclick="loadCategoryTransactions(' + dataDetails[row].category_id + ')">Transactions</button>' +
           '</div>';
   }
 
