@@ -16,6 +16,6 @@ This can be viewed for the current and last month.
 
 ## Getting started
 
-[Install Node.js](https://nodejs.org/en/download) and clone this repo. Then run locally using `npm run dev`. A [Lunch Money access token](https://my.lunchmoney.app/developers) is required. The access token remans local to the browser and does not go back to the server.
+[Install Node.js](https://nodejs.org/en/download) and clone this repo. Then run locally using `npm run dev`. A [Lunch Money access token](https://my.lunchmoney.app/developers) is required. NOTE: The access token remains local to the user's browser and is sent only to Lunch Money API.
 
 That's it for now! Stay tuned for other utilities.
