@@ -1,4 +1,4 @@
-import type { CapabilityContext } from './main';
+import type { CapabilityContext } from './capability';
 
 declare global {
   interface Window {
@@ -14,8 +14,6 @@ const chartApiReady = new Promise<void>((resolve) => {
 const CATEGORIES_ENDPOINT = '/categories';
 const TRANSACTIONS_ENDPOINT = '/transactions';
 const BUDGETS_ENDPOINT = '/summary';
-const periodMenu = document.getElementById('period-menu') as HTMLDetailsElement | null;
-const periodMenuTrigger = document.getElementById('period-menu-trigger');
 const categoryMap = new Map<number, any>();
 const categoryExpensesMap = new Map<number, any[]>();
 let appContext: CapabilityContext;
@@ -158,6 +156,8 @@ async function onPeriodChange(period: number) {
     return;
   }
   currentPeriod = period;
+  const periodMenu = document.getElementById('period-menu') as HTMLDetailsElement | null;
+  const periodMenuTrigger = document.getElementById('period-menu-trigger');
   if (periodMenuTrigger) {
     periodMenuTrigger.textContent = periodMenu?.querySelector<HTMLButtonElement>(`[data-period="${period}"]`)?.textContent || 'Select period';
   }
@@ -171,6 +171,7 @@ async function onPeriodChange(period: number) {
 }
 
 function addPeriodOptions() {
+  const periodMenu = document.getElementById('period-menu') as HTMLDetailsElement | null;
   const periodOptions = periodMenu?.querySelector('.period-menu__options');
   if (!periodOptions || periodOptions.querySelector('[data-period="1"]')) {
     return;
