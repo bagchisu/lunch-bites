@@ -231,6 +231,7 @@ p {
   font-size: 14px;
   line-height: 1.2;
   cursor: pointer;
+  width: 150px;
 }
 
 .period-menu summary {
@@ -421,6 +422,7 @@ p {
 #saveBtn:disabled {
   cursor: wait;
   opacity: 0.65;
+}
 
 .treemap-tooltip__button {
   width: 100%;
@@ -707,4 +709,3 @@ p {
     font-size: 12px;
   }
 }
-
