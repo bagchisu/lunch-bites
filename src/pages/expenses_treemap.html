@@ -1,0 +1,18 @@
+<header class="app-toolbar">
+  <div class="app-heading">
+    <h2>Expenses Treemap</h2>
+  </div>
+</header>
+<dialog id="transactions-modal" aria-label="Category transactions">
+  <div id="transactions-modal-content"></div>
+  <form method="dialog" class="transactions-modal__actions">
+    <button type="submit" class="transactions-modal__close">Close</button>
+  </form>
+</dialog>
+<details id="period-menu" class="period-menu">
+  <summary id="period-menu-trigger">This month</summary>
+  <div class="period-menu__options" role="menu" aria-label="Spending period">
+    <button type="button" role="menuitem" data-period="0">This month</button>
+  </div>
+</details>
+<div id="chart-div"></div>
