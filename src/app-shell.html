@@ -1,0 +1,33 @@
+<div id="app-shell">
+  <aside class="app-sidebar" aria-label="Application navigation">
+    <a class="sidebar__brand" href="/" aria-label="Lunch Bites capabilities">
+      <span class="sidebar__brand-mark" aria-hidden="true">LB</span>
+      <span>Lunch Bites</span>
+    </a>
+    <section class="sidebar__budget" aria-label="Active budget">
+      <span class="sidebar__budget-label">Active budget</span>
+      <p id="budget-name"></p>
+    </section>
+    <nav id="capability-nav" class="capability-nav" aria-label="Capabilities">
+      <p class="sidebar__section-label">Capabilities</p>
+    </nav>
+    <div class="sidebar__footer">
+      <button id="updateBtn" class="update-btn sidebar__settings" type="button">Update API Key</button>
+    </div>
+    <dialog id="apiKeyModal">
+      <form id="apiKeyForm">
+        <h3>API Key Required</h3>
+        <p class="api-key-prompt">
+          Enter your Lunch Money access token. Get one from
+          <a href="https://my.lunchmoney.app/developers" target="_blank" rel="noreferrer">Lunch Money developers</a>.
+        </p>
+        <input type="password" id="apiKeyInput" placeholder="API Key" autocomplete="current-password" required>
+        <p id="apiKeyError" role="alert" aria-live="polite"></p>
+        <button id="saveBtn" type="submit">Save</button>
+      </form>
+    </dialog>
+  </aside>
+  <main id="app">
+    <div id="capability-root"></div>
+  </main>
+</div>
