@@ -1,9 +1,125 @@
 import './cash_flow.css';
 import { startApplication } from './main';
+import type { CapabilityContext } from './capability';
+
+let appContext: CapabilityContext;
+
+const PLAID_ACCOUNTS_ENDPOINT = '/plaid_accounts';
+const MANUAL_ACCOUNTS_ENDPOINT = '/manual_accounts';
+const RECURRING_ITEMS_ENDPOINT = '/recurring_items';
+const TIME_HORIZON_DAYS = 30;
+const SAFETY_BUFFER_AMOUNT = 2000
+const cashAccounts = new Map<number, any>();
+
+async function initializeCashAccounts() {
+  const plaidAccounts = await appContext.getInfo(PLAID_ACCOUNTS_ENDPOINT);
+  for (const account of plaidAccounts['plaid_accounts'].filter((account: any) => account.type === 'cash')) {
+    cashAccounts.set(account.id, account);
+  }
+  const manualAccounts = await appContext.getInfo(MANUAL_ACCOUNTS_ENDPOINT);
+  for (const account of manualAccounts['manual_accounts'].filter((account: any) => account.type === 'cash')) {
+    cashAccounts.set(account.id, account);
+  }
+  console.debug('Cash accounts:', cashAccounts);
+}
+
+async function loadRecurringItems(horizonDays: number): Promise<Map<number, any[]>> {
+  const today = new Date();
+  const horizonDate = new Date(today.getTime() + horizonDays * 24 * 60 * 60 * 1000);
+  const recurringItems = await appContext.getInfo(`${RECURRING_ITEMS_ENDPOINT}?start_date=${today.toISOString().split('T')[0]}&end_date=${horizonDate.toISOString().split('T')[0]}`);
+  const pendingDebits = new Map<number, any[]>();
+  for (const item of recurringItems.recurring_items) {
+    if (item.matches?.found_transactions.length !== 0) {
+      continue;
+    }
+    const itemCriteria = item.transaction_criteria;
+    const account = cashAccounts.get(itemCriteria.plaid_account_id || itemCriteria.manual_account_id);
+    if (account) {
+      let recurringItems = pendingDebits.get(account.id);
+      if (recurringItems === undefined) {
+        recurringItems = [];
+        pendingDebits.set(account.id, recurringItems);
+      }
+      for (const expectedDate of item.matches!.expected_occurrence_dates) {
+        recurringItems.push({
+          expected_date: expectedDate,
+          payee: itemCriteria.payee,
+          amount: Number(itemCriteria.amount),
+        });
+      }
+    }
+  }
+  // sort the recurring items for each account by expected date
+  for (const items of pendingDebits.values()) {
+    items.sort((a, b) => new Date(a.expected_date).getTime() - new Date(b.expected_date).getTime());
+  }
+  console.debug('Pending debits:', pendingDebits);
+  return pendingDebits;
+}
+
+function showCashFlowTable(pendingDebits: Map<number, any[]>) {
+  const accountsDiv = document.getElementById('accounts-div');
+  if (accountsDiv) {
+    const defaultsParagraph = document.createElement('p');
+    defaultsParagraph.innerHTML = `Assumptions:<ul><li>Time Horizon: ${TIME_HORIZON_DAYS} days</li><li>Safety Buffer Amount: $${SAFETY_BUFFER_AMOUNT.toFixed(2)}</li></ul>`;
+    accountsDiv.appendChild(defaultsParagraph);
+    for (const account of cashAccounts.values()) {
+      const header = document.createElement('h3');
+      header.textContent = account.display_name;
+      accountsDiv.appendChild(header);
+      const balanceParagraph = document.createElement('p');
+      balanceParagraph.textContent = `Balance: $${Number(account.balance).toFixed(2)}`;
+      accountsDiv.appendChild(balanceParagraph);
+      const accountDebits = pendingDebits.get(account.id);
+      if (accountDebits && accountDebits.length > 0) {
+        const table = document.createElement('table');
+        table.classList.add('cash-flow-table');
+        const headerRow = table.insertRow();
+        headerRow.insertCell().textContent = 'Expected Date';
+        headerRow.insertCell().textContent = 'Payee';
+        headerRow.insertCell().textContent = 'Amount';
+        headerRow.insertCell().textContent = 'Balance After';
+        var balanceAfter = Number(account.balance);
+        for (const debit of accountDebits) {
+          balanceAfter -= debit.amount;
+          const row = table.insertRow();
+          row.insertCell().textContent = debit.expected_date;
+          row.insertCell().textContent = debit.payee;
+          row.insertCell().textContent = `$${debit.amount.toFixed(2)}`;
+          row.insertCell().textContent = `$${Number(balanceAfter).toFixed(2)}`; // color red if negative
+          row.cells[2].style.textAlign = 'right';
+          row.cells[3].style.textAlign = 'right';
+          if (balanceAfter < 0) {
+            row.cells[3].style.color = 'red';
+          } else if (balanceAfter < SAFETY_BUFFER_AMOUNT) {
+            row.cells[3].style.color = 'orange';
+          } else {
+            row.cells[3].style.color = 'green';
+          }
+        }
+        table.style.fontSize = 'smaller';
+        accountsDiv.appendChild(table);
+        if (balanceAfter < SAFETY_BUFFER_AMOUNT) {
+          const replenishParagraph = document.createElement('p');
+          const replenishAmount = SAFETY_BUFFER_AMOUNT - balanceAfter;
+          replenishParagraph.textContent = `Replenishment Needed: $${Number(replenishAmount).toFixed(2)}`;
+          replenishParagraph.style.fontWeight = 'bold';
+          accountsDiv.appendChild(replenishParagraph);
+        }
+      }
+    }
+  }
+}
+export async function checkCashFlow(context: CapabilityContext) {
+  appContext = context;
+  await initializeCashAccounts();
+  const pendingDebits = await loadRecurringItems(TIME_HORIZON_DAYS);
+  showCashFlowTable(pendingDebits);
+}
 
 const pageTemplate = document.getElementById('capability-page') as HTMLTemplateElement | null;
 if (!pageTemplate) {
 	throw new Error('Cash Flow page must include a "capability-page" template.');
 }
 
-startApplication(pageTemplate.innerHTML);
+startApplication(pageTemplate.innerHTML, checkCashFlow);
