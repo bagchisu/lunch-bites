@@ -7,12 +7,12 @@ export interface CapabilityLink {
 export const capabilityCatalog: CapabilityLink[] = [
   {
     title: 'Expenses Treemap',
-    href: '/expenses_treemap.html',
+    href: '/src/pages/expenses_treemap.html',
     description: 'Explore category spending and budget usage.',
   },
   {
     title: 'Cash Flow',
-    href: '/cash_flow.html',
+    href: '/src/pages/cash_flow.html',
     description: 'A view of upcoming income and expenses in depository accounts.',
   },
 ];

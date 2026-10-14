@@ -1,5 +1,9 @@
 import './cash_flow.css';
 import { startApplication } from './main';
-import pageHtml from './pages/cash_flow.html?raw';
 
-startApplication(pageHtml);
+const pageTemplate = document.getElementById('capability-page') as HTMLTemplateElement | null;
+if (!pageTemplate) {
+	throw new Error('Cash Flow page must include a "capability-page" template.');
+}
+
+startApplication(pageTemplate.innerHTML);

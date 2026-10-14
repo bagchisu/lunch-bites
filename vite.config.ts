@@ -14,6 +14,11 @@ export default defineConfig({
             .filter((file) => file.endsWith('.html'))
             .map((file) => [file.replace(/\.html$/, ''), resolve(root, file)]),
         ),
+        ...Object.fromEntries(
+          readdirSync(resolve(root, 'src/pages'))
+            .filter((file) => file.endsWith('.html'))
+            .map((file) => [`src/pages/${file.replace(/\.html$/, '')}`, resolve(root, 'src/pages', file)]),
+        ),
       },
     },
   },

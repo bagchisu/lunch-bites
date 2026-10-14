@@ -1,6 +1,5 @@
 import './expenses_treemap.css';
 import { startApplication } from './main';
-import pageHtml from './pages/expenses_treemap.html?raw';
 import type { CapabilityContext } from './capability';
 
 declare global {
@@ -290,4 +289,9 @@ export async function initializeExpensesTreemap(context: CapabilityContext) {
   await onPeriodChange(0);
 }
 
-startApplication(pageHtml, initializeExpensesTreemap);
+const pageTemplate = document.getElementById('capability-page') as HTMLTemplateElement | null;
+if (!pageTemplate) {
+  throw new Error('Expenses Treemap page must include a "capability-page" template.');
+}
+
+startApplication(pageTemplate.innerHTML, initializeExpensesTreemap);
