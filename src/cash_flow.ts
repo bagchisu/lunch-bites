@@ -8,7 +8,6 @@ const PLAID_ACCOUNTS_ENDPOINT = '/plaid_accounts';
 const MANUAL_ACCOUNTS_ENDPOINT = '/manual_accounts';
 const RECURRING_ITEMS_ENDPOINT = '/recurring_items';
 const TIME_HORIZON_DAYS = 30;
-const SAFETY_BUFFER_AMOUNT = 2000
 const cashAccounts = new Map<number, any>();
 
 async function initializeCashAccounts() {
@@ -45,6 +44,8 @@ async function loadRecurringItems(horizonDays: number): Promise<Map<number, any[
           expected_date: expectedDate,
           payee: itemCriteria.payee,
           amount: Number(itemCriteria.amount),
+          currency: itemCriteria.currency,
+          to_base: itemCriteria.to_base
         });
       }
     }
@@ -60,15 +61,13 @@ async function loadRecurringItems(horizonDays: number): Promise<Map<number, any[
 function showCashFlowTable(pendingDebits: Map<number, any[]>) {
   const accountsDiv = document.getElementById('accounts-div');
   if (accountsDiv) {
-    const defaultsParagraph = document.createElement('p');
-    defaultsParagraph.innerHTML = `Assumptions:<ul><li>Time Horizon: ${TIME_HORIZON_DAYS} days</li><li>Safety Buffer Amount: $${SAFETY_BUFFER_AMOUNT.toFixed(2)}</li></ul>`;
-    accountsDiv.appendChild(defaultsParagraph);
+    document.getElementById('cash-flow-time-horizon')!.textContent = TIME_HORIZON_DAYS.toString() + ' days';
     for (const account of cashAccounts.values()) {
       const header = document.createElement('h3');
       header.textContent = account.display_name;
       accountsDiv.appendChild(header);
       const balanceParagraph = document.createElement('p');
-      balanceParagraph.textContent = `Balance: $${Number(account.balance).toFixed(2)}`;
+      balanceParagraph.textContent = `Balance: ${Number(account.balance).toFixed(2)} ${account.currency.toUpperCase()}`;
       accountsDiv.appendChild(balanceParagraph);
       const accountDebits = pendingDebits.get(account.id);
       if (accountDebits && accountDebits.length > 0) {
@@ -77,7 +76,7 @@ function showCashFlowTable(pendingDebits: Map<number, any[]>) {
         const headerRow = table.insertRow();
         headerRow.insertCell().textContent = 'Expected Date';
         headerRow.insertCell().textContent = 'Payee';
-        headerRow.insertCell().textContent = 'Amount';
+        headerRow.insertCell().textContent = `Amount (${account.currency.toUpperCase()})`;
         headerRow.insertCell().textContent = 'Balance After';
         var balanceAfter = Number(account.balance);
         for (const debit of accountDebits) {
@@ -85,24 +84,22 @@ function showCashFlowTable(pendingDebits: Map<number, any[]>) {
           const row = table.insertRow();
           row.insertCell().textContent = debit.expected_date;
           row.insertCell().textContent = debit.payee;
-          row.insertCell().textContent = `$${debit.amount.toFixed(2)}`;
-          row.insertCell().textContent = `$${Number(balanceAfter).toFixed(2)}`; // color red if negative
+          row.insertCell().textContent = `${debit.amount.toFixed(2)}`;
+          row.insertCell().textContent = `${Number(balanceAfter).toFixed(2)}`; // color red if negative
           row.cells[2].style.textAlign = 'right';
           row.cells[3].style.textAlign = 'right';
           if (balanceAfter < 0) {
             row.cells[3].style.color = 'red';
-          } else if (balanceAfter < SAFETY_BUFFER_AMOUNT) {
-            row.cells[3].style.color = 'orange';
           } else {
             row.cells[3].style.color = 'green';
           }
         }
         table.style.fontSize = 'smaller';
         accountsDiv.appendChild(table);
-        if (balanceAfter < SAFETY_BUFFER_AMOUNT) {
+        if (balanceAfter < 0) {
           const replenishParagraph = document.createElement('p');
-          const replenishAmount = SAFETY_BUFFER_AMOUNT - balanceAfter;
-          replenishParagraph.textContent = `Replenishment Needed: $${Number(replenishAmount).toFixed(2)}`;
+          const replenishAmount = - balanceAfter;
+          replenishParagraph.innerHTML = `Replenishment Needed: ${Number(replenishAmount).toFixed(2)} ${account.currency.toUpperCase()}<br>(and more if you need to maintain a minimum balance)`;
           replenishParagraph.style.fontWeight = 'bold';
           accountsDiv.appendChild(replenishParagraph);
         }
