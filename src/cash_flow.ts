@@ -59,6 +59,14 @@ async function loadRecurringItems(horizonDays: number): Promise<Map<number, any[
 }
 
 function showCashFlowTable(pendingDebits: Map<number, any[]>) {
+  function checkConsistentCurrency(items: any[], currency: string): boolean {
+    for (const item of items) {
+      if (item.currency !== currency) {
+        return false;
+      }
+    }
+    return true;
+  }
   const accountsDiv = document.getElementById('accounts-div');
   if (accountsDiv) {
     document.getElementById('cash-flow-time-horizon')!.textContent = TIME_HORIZON_DAYS.toString() + ' days';
@@ -68,23 +76,28 @@ function showCashFlowTable(pendingDebits: Map<number, any[]>) {
       accountsDiv.appendChild(header);
       const balanceParagraph = document.createElement('p');
       balanceParagraph.textContent = `Balance: ${Number(account.balance).toFixed(2)} ${account.currency.toUpperCase()}`;
+      const primaryCurrency = appContext.userInfo?.primary_currency;
+      if (primaryCurrency && account.currency !== primaryCurrency){
+        balanceParagraph.textContent += ` (${Number(account.to_base).toFixed(2)} ${primaryCurrency.toUpperCase()})`;
+      }
       accountsDiv.appendChild(balanceParagraph);
       const accountDebits = pendingDebits.get(account.id);
       if (accountDebits && accountDebits.length > 0) {
+        const useLocalCurrency = checkConsistentCurrency(accountDebits, account.currency);
         const table = document.createElement('table');
         table.classList.add('cash-flow-table');
         const headerRow = table.insertRow();
         headerRow.insertCell().textContent = 'Expected Date';
         headerRow.insertCell().textContent = 'Payee';
-        headerRow.insertCell().textContent = `Amount (${account.currency.toUpperCase()})`;
+        headerRow.insertCell().textContent = `Amount (${useLocalCurrency ? account.currency.toUpperCase() : primaryCurrency?.toUpperCase()})`;
         headerRow.insertCell().textContent = 'Balance After';
-        var balanceAfter = Number(account.balance);
+        var balanceAfter = Number(useLocalCurrency ? account.balance : account.to_base);
         for (const debit of accountDebits) {
-          balanceAfter -= debit.amount;
+          balanceAfter -= useLocalCurrency ? debit.amount : Number(debit.to_base);
           const row = table.insertRow();
           row.insertCell().textContent = debit.expected_date;
           row.insertCell().textContent = debit.payee;
-          row.insertCell().textContent = `${debit.amount.toFixed(2)}`;
+          row.insertCell().textContent = `${useLocalCurrency ? debit.amount.toFixed(2) : Number(debit.to_base).toFixed(2)}`;
           row.insertCell().textContent = `${Number(balanceAfter).toFixed(2)}`; // color red if negative
           row.cells[2].style.textAlign = 'right';
           row.cells[3].style.textAlign = 'right';
@@ -99,7 +112,7 @@ function showCashFlowTable(pendingDebits: Map<number, any[]>) {
         if (balanceAfter < 0) {
           const replenishParagraph = document.createElement('p');
           const replenishAmount = - balanceAfter;
-          replenishParagraph.innerHTML = `Replenishment Needed: ${Number(replenishAmount).toFixed(2)} ${account.currency.toUpperCase()}<br>(and more if you need to maintain a minimum balance)`;
+          replenishParagraph.innerHTML = `Replenishment Needed: ${Number(replenishAmount).toFixed(2)} ${useLocalCurrency ? account.currency.toUpperCase() : primaryCurrency?.toUpperCase()}<br>(and more if you need to maintain a minimum balance)`;
           replenishParagraph.style.fontWeight = 'bold';
           accountsDiv.appendChild(replenishParagraph);
         }
