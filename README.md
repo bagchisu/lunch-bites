@@ -4,7 +4,7 @@
 
 ## Tree map of expenses
 
-![treemap example](./docs/treemap.png)
+![expenses treemap example](./docs/expenses_treemap.png)
 
 A [Tree map](https://en.wikipedia.org/wiki/Treemapping) helps to visualize the amount spent in each category as rectangles whose areas are in proportion to the total. It has the following features:
 
@@ -14,13 +14,19 @@ A [Tree map](https://en.wikipedia.org/wiki/Treemapping) helps to visualize the a
 
 This can be viewed for the current and last month.
 
+## Cash flow in cash accounts
+
+![cash flow example](./docs/cash_flow.png)
+
+This utility looks at recurring income and expenses in cash accounts for the next 30 days to predict the expected balance in each cash account and whether the account needs replenishing in order to avoid overdraft.
+
 ## Getting started
 
 [Install Node.js](https://nodejs.org/en/download) and clone this repo. Then run locally using `npm run dev`. A [Lunch Money access token](https://my.lunchmoney.app/developers) is required. NOTE: The access token remains local to the user's browser and is sent only to Lunch Money API.
 
 That's it for now! Stay tuned for other utilities.
 
-## Adding a capability
+## For developers: how to add a new capability
 
 All pages provide only a minimal HTML document with an `#application-root`. The shared layout in `src/app-shell.html` supplies the navigation, API-key dialog, and content area, so the sidebar is maintained in one place. The links and home-page cards are both generated from `src/capability-catalog.ts`.
 

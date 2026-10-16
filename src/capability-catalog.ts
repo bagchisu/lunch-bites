@@ -13,6 +13,6 @@ export const capabilityCatalog: CapabilityLink[] = [
   {
     title: 'Cash Flow',
     href: '/cash_flow.html',
-    description: 'A view of upcoming income and expenses in depository accounts.',
+    description: 'A view of upcoming income and expenses in cash accounts.',
   },
 ];

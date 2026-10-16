@@ -74,6 +74,9 @@ function showCashFlowTable(pendingDebits: Map<number, any[]>) {
       const header = document.createElement('h3');
       header.textContent = account.display_name;
       accountsDiv.appendChild(header);
+      if (account.balance > 3000) {
+        account.balance -= 3000; // assume a minimum balance of 3000 for cash accounts
+      }
       const balanceParagraph = document.createElement('p');
       balanceParagraph.textContent = `Balance: ${Number(account.balance).toFixed(2)} ${account.currency.toUpperCase()}`;
       const primaryCurrency = appContext.userInfo?.primary_currency;
@@ -112,8 +115,7 @@ function showCashFlowTable(pendingDebits: Map<number, any[]>) {
         if (balanceAfter < 0) {
           const replenishParagraph = document.createElement('p');
           const replenishAmount = - balanceAfter;
-          replenishParagraph.innerHTML = `Replenishment Needed: ${Number(replenishAmount).toFixed(2)} ${useLocalCurrency ? account.currency.toUpperCase() : primaryCurrency?.toUpperCase()}<br>(and more if you need to maintain a minimum balance)`;
-          replenishParagraph.style.fontWeight = 'bold';
+          replenishParagraph.innerHTML = `<strong>Minimum replenishment needed: ${Number(replenishAmount).toFixed(2)} ${useLocalCurrency ? account.currency.toUpperCase() : primaryCurrency?.toUpperCase()}</strong><br>(and more if you need to maintain a minimum balance)`;
           accountsDiv.appendChild(replenishParagraph);
         }
       }

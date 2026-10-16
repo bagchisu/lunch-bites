@@ -331,8 +331,8 @@ p {
   padding: 8px 12px;
   border: 1px solid var(--sidebar-active-text);
   border-radius: 4px;
-  background: var(--sidebar-active-text);
-  color: #fff;
+  background: var(--bg);
+  color: var(--sidebar-active-text);
   font: inherit;
   font-size: 14px;
   cursor: pointer;
