@@ -67,9 +67,9 @@ function showCashFlowTable(pendingDebits: Map<number, any[]>) {
     }
     return true;
   }
-  const accountsDiv = document.getElementById('accounts-div');
+  const accountsDiv = document.getElementById('cash-flow-results');
   if (accountsDiv) {
-    document.getElementById('cash-flow-time-horizon')!.textContent = TIME_HORIZON_DAYS.toString() + ' days';
+    accountsDiv.replaceChildren();
     for (const account of cashAccounts.values()) {
       const header = document.createElement('h3');
       header.textContent = account.display_name;
@@ -122,8 +122,21 @@ function showCashFlowTable(pendingDebits: Map<number, any[]>) {
 export async function checkCashFlow(context: CapabilityContext) {
   appContext = context;
   await initializeCashAccounts();
-  const pendingDebits = await loadRecurringItems(TIME_HORIZON_DAYS);
-  showCashFlowTable(pendingDebits);
+  const horizonInput = document.getElementById('cash-flow-time-horizon') as HTMLInputElement;
+  horizonInput.value = TIME_HORIZON_DAYS.toString();
+  const updateCashFlow = async () => {
+    const horizonDays = Number(horizonInput.value);
+    if (!Number.isSafeInteger(horizonDays) || horizonDays <= 0) {
+      horizonInput.setCustomValidity('Enter a whole number greater than 0.');
+      horizonInput.reportValidity();
+      return;
+    }
+    horizonInput.setCustomValidity('');
+    const pendingDebits = await loadRecurringItems(horizonDays);
+    showCashFlowTable(pendingDebits);
+  };
+  horizonInput.addEventListener('change', updateCashFlow);
+  await updateCashFlow();
 }
 
 const pageTemplate = document.getElementById('capability-page') as HTMLTemplateElement | null;
