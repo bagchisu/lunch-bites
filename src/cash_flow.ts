@@ -8,7 +8,29 @@ const PLAID_ACCOUNTS_ENDPOINT = '/plaid_accounts';
 const MANUAL_ACCOUNTS_ENDPOINT = '/manual_accounts';
 const RECURRING_ITEMS_ENDPOINT = '/recurring_items';
 const TIME_HORIZON_DAYS = 30;
+const MINIMUM_BALANCES_STORAGE_KEY = 'cash-flow-minimum-balances';
 const cashAccounts = new Map<number, any>();
+const minimumBalances = loadMinimumBalances();
+
+function loadMinimumBalances(): Map<number, number> {
+  try {
+    const storedBalances = JSON.parse(localStorage.getItem(MINIMUM_BALANCES_STORAGE_KEY) ?? '{}') as Record<string, unknown>;
+    const balances = new Map<number, number>();
+    for (const [accountId, amount] of Object.entries(storedBalances)) {
+      const numericAccountId = Number(accountId);
+      if (Number.isSafeInteger(numericAccountId) && typeof amount === 'number' && Number.isFinite(amount) && amount >= 0) {
+        balances.set(numericAccountId, amount);
+      }
+    }
+    return balances;
+  } catch {
+    return new Map<number, number>();
+  }
+}
+
+function saveMinimumBalances() {
+  localStorage.setItem(MINIMUM_BALANCES_STORAGE_KEY, JSON.stringify(Object.fromEntries(minimumBalances)));
+}
 
 async function initializeCashAccounts() {
   const plaidAccounts = await appContext.getInfo(PLAID_ACCOUNTS_ENDPOINT);
@@ -59,7 +81,7 @@ async function loadRecurringItems(horizonDays: number): Promise<Map<number, any[
 }
 
 function showCashFlowTable(pendingDebits: Map<number, any[]>) {
-  function checkConsistentCurrency(items: any[], currency: string): boolean {
+  function checkConsistentLocalCurrency(items: any[], currency: string): boolean {
     for (const item of items) {
       if (item.currency !== currency) {
         return false;
@@ -81,9 +103,37 @@ function showCashFlowTable(pendingDebits: Map<number, any[]>) {
         balanceParagraph.textContent += ` (${Number(account.to_base).toFixed(2)} ${primaryCurrency.toUpperCase()})`;
       }
       accountsDiv.appendChild(balanceParagraph);
-      const accountDebits = pendingDebits.get(account.id);
+      const accountDebits = pendingDebits.get(account.id) ?? [];
+      // use local currency if all debits are in the same currency as the account, otherwise use primary currency
+      const useLocalCurrency = checkConsistentLocalCurrency(accountDebits, account.currency);
+      const minimumLocalBalance = minimumBalances.get(account.id) ?? 0; // minimum balance is stored in the account's local currency
+      const minimumBalanceLabel = document.createElement('label');
+      minimumBalanceLabel.append(`Minimum balance (${account.currency.toUpperCase()}): `);
+      const minimumBalanceInput = document.createElement('input');
+      minimumBalanceInput.type = 'number';
+      minimumBalanceInput.min = '0';
+      minimumBalanceInput.step = '1';
+      minimumBalanceInput.value = minimumLocalBalance.toString();
+      minimumBalanceInput.setAttribute('aria-label', `Minimum balance for ${account.display_name}`);
+      minimumBalanceInput.addEventListener('change', () => {
+        if (!minimumBalanceInput.validity.valid) {
+          return;
+        }
+        if (minimumBalanceInput.value === '') {
+          minimumBalances.delete(account.id);
+        } else {
+          minimumBalances.set(account.id, Number(minimumBalanceInput.value));
+        }
+        saveMinimumBalances();
+        showCashFlowTable(pendingDebits);
+      });
+      minimumBalanceLabel.appendChild(minimumBalanceInput);
+      accountsDiv.appendChild(minimumBalanceLabel);
+      const balanceConversionRate = Number(account.balance) !== 0 ? Number(account.to_base) / Number(account.balance) : undefined;
+      const minimumBalanceInDisplayCurrency = useLocalCurrency
+        ? minimumLocalBalance
+        : balanceConversionRate === undefined ? 0 : minimumLocalBalance * balanceConversionRate;
       if (accountDebits && accountDebits.length > 0) {
-        const useLocalCurrency = checkConsistentCurrency(accountDebits, account.currency);
         const table = document.createElement('table');
         table.classList.add('cash-flow-table');
         const headerRow = table.insertRow();
@@ -91,7 +141,7 @@ function showCashFlowTable(pendingDebits: Map<number, any[]>) {
         headerRow.insertCell().textContent = 'Payee';
         headerRow.insertCell().textContent = `Amount (${useLocalCurrency ? account.currency.toUpperCase() : primaryCurrency?.toUpperCase()})`;
         headerRow.insertCell().textContent = 'Balance After';
-        var balanceAfter = Number(useLocalCurrency ? account.balance : account.to_base);
+        let balanceAfter = Number(useLocalCurrency ? account.balance : account.to_base);
         for (const debit of accountDebits) {
           balanceAfter -= useLocalCurrency ? debit.amount : Number(debit.to_base);
           const row = table.insertRow();
@@ -103,16 +153,18 @@ function showCashFlowTable(pendingDebits: Map<number, any[]>) {
           row.cells[3].style.textAlign = 'right';
           if (balanceAfter < 0) {
             row.cells[3].style.color = 'red';
+          } else if (balanceAfter < minimumBalanceInDisplayCurrency) {
+            row.cells[3].style.color = 'orange';
           } else {
             row.cells[3].style.color = 'green';
           }
         }
         table.style.fontSize = 'smaller';
         accountsDiv.appendChild(table);
-        if (balanceAfter < 0) {
+        if (balanceAfter < minimumBalanceInDisplayCurrency) {
           const replenishParagraph = document.createElement('p');
-          const replenishAmount = - balanceAfter;
-          replenishParagraph.innerHTML = `<strong>Minimum replenishment needed: ${Number(replenishAmount).toFixed(2)} ${useLocalCurrency ? account.currency.toUpperCase() : primaryCurrency?.toUpperCase()}</strong><br>(and more if you need to maintain a minimum balance)`;
+          const replenishAmount = minimumBalanceInDisplayCurrency - balanceAfter;
+          replenishParagraph.innerHTML = `<strong>Minimum replenishment needed: ${replenishAmount.toFixed(2)} ${useLocalCurrency ? account.currency.toUpperCase() : primaryCurrency?.toUpperCase()}</strong>`;
           accountsDiv.appendChild(replenishParagraph);
         }
       }

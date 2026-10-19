@@ -1,4 +1,24 @@
 /* Cash Flow capability styles. */
+
+#cash-flow-time-horizon,
+#cash-flow-results input[type='number'] {
+	-moz-appearance: textfield;
+	appearance: textfield;
+  font-size:large;
+  border-top-style: none;
+  border-right-style: none;
+  border-left-style: none;
+  width: 8ch;
+}
+
 #cash-flow-time-horizon {
-	width: 5ch;
+	width: 3ch;
+}
+
+#cash-flow-time-horizon::-webkit-inner-spin-button,
+#cash-flow-time-horizon::-webkit-outer-spin-button,
+#cash-flow-results input[type='number']::-webkit-inner-spin-button,
+#cash-flow-results input[type='number']::-webkit-outer-spin-button {
+	margin: 0;
+	-webkit-appearance: none;
 }
