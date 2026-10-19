@@ -74,9 +74,6 @@ function showCashFlowTable(pendingDebits: Map<number, any[]>) {
       const header = document.createElement('h3');
       header.textContent = account.display_name;
       accountsDiv.appendChild(header);
-      if (account.balance > 3000) {
-        account.balance -= 3000; // assume a minimum balance of 3000 for cash accounts
-      }
       const balanceParagraph = document.createElement('p');
       balanceParagraph.textContent = `Balance: ${Number(account.balance).toFixed(2)} ${account.currency.toUpperCase()}`;
       const primaryCurrency = appContext.userInfo?.primary_currency;
