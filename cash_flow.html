@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" sizes="any" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍱</text></svg>">
+    <title>Cash Flow | Lunch Bites</title>
+    <script type="module" crossorigin src="/lunch-bites/assets/cash_flow-CAolk9RZ.js"></script>
+    <link rel="modulepreload" crossorigin href="/lunch-bites/assets/main-BPfiWLm9.js">
+    <link rel="stylesheet" crossorigin href="/lunch-bites/assets/main--cZo7E6V.css">
+    <link rel="stylesheet" crossorigin href="/lunch-bites/assets/cash_flow-CDIQqNb4.css">
+  </head>
+  <body>
+    <div id="application-root"></div>
+    <template id="capability-page">
+      <header class="app-toolbar">
+        <div class="app-heading">
+          <h2>Cash Flow</h2>
+        </div>
+      </header>
+      <div id="accounts-div">
+        <p>
+          The Cash Flow capability provides a projection of your future account balances for each cash account based on your current balance
+          and upcoming transactions. It helps you understand your financial position over the next 
+          <b>
+            <input id="cash-flow-time-horizon" type="number" min="1" step="1" required aria-label="Cash flow time horizon in days" />
+          </b> days and advises you on any necessary replenishments to maintain a positive minimum balance.
+        </p>
+      </div>
+      <div id="cash-flow-results"></div>
+    </template>
+  </body>
+</html>

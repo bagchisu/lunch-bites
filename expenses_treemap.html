@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" sizes="any" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍱</text></svg>">
+    <title>Expenses Treemap | Lunch Bites</title>
+    <script src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="module" crossorigin src="/lunch-bites/assets/expenses_treemap-Pk-dvKJq.js"></script>
+    <link rel="modulepreload" crossorigin href="/lunch-bites/assets/main-BPfiWLm9.js">
+    <link rel="stylesheet" crossorigin href="/lunch-bites/assets/main--cZo7E6V.css">
+    <link rel="stylesheet" crossorigin href="/lunch-bites/assets/expenses_treemap-Uq5g0gxV.css">
+  </head>
+  <body>
+    <div id="application-root"></div>
+    <template id="capability-page">
+      <header class="app-toolbar">
+        <div class="app-heading">
+          <h2>Expenses Treemap</h2>
+        </div>
+      </header>
+      <dialog id="transactions-modal" aria-label="Category transactions">
+        <div id="transactions-modal-content"></div>
+        <form method="dialog" class="transactions-modal__actions">
+          <button type="submit" class="transactions-modal__close">Close</button>
+        </form>
+      </dialog>
+      <details id="period-menu" class="period-menu">
+        <summary id="period-menu-trigger">This month</summary>
+        <div class="period-menu__options" role="menu" aria-label="Spending period">
+          <button type="button" role="menuitem" data-period="0">This month</button>
+        </div>
+      </details>
+      <div id="chart-div"></div>
+    </template>
+  </body>
+</html>
