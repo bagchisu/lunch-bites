@@ -5,12 +5,14 @@ import { defineConfig } from 'vite';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
 const pagesRoot = resolve(root, 'src/pages');
+const base = '/lunch-bites/';
 const capabilityPageFiles = readdirSync(pagesRoot).filter((file) => file.endsWith('.html'));
 const capabilityPageRoutes = new Map(
-  capabilityPageFiles.map((file) => [`/${file}`, `/src/pages/${file}`]),
+  capabilityPageFiles.map((file) => [`${base}${file}`, `${base}src/pages/${file}`]),
 );
 
 export default defineConfig({
+  base,
   plugins: [
     {
       name: 'capability-page-routes',
